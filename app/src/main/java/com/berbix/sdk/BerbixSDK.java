@@ -11,6 +11,8 @@ public class BerbixSDK {
     private BerbixApiManager apiManager;
     private BerbixAuthFlow authFlow;
 
+    private BerbixSDKAdapter adapter;
+
     public BerbixSDK() {
         config = new BerbixConfiguration();
         authFlow = new BerbixAuthFlow();
@@ -35,7 +37,12 @@ public class BerbixSDK {
         return authFlow;
     }
 
-    public static void getAuthorized(Context context) {
+    public BerbixSDKAdapter adapter() {
+        return this.adapter;
+    }
+
+    public static void getAuthorized(Context context, BerbixSDKAdapter adapter) {
+        shared.adapter = adapter;
         shared.authFlow.context = context;
         shared.authFlow.startAuthFlow();
     }

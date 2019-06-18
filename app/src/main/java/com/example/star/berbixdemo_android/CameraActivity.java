@@ -1,7 +1,10 @@
 package com.example.star.berbixdemo_android;
 
+import android.Manifest;
 import android.app.Activity;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.v4.app.ActivityCompat;
 import android.util.SparseArray;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -21,6 +24,8 @@ public class CameraActivity extends Activity {
 
     private CameraSource camera = null;
 
+    private static final int RC_HANDLE_CAMERA_PERM = 2;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,10 +38,14 @@ public class CameraActivity extends Activity {
             cameraView.getHolder().addCallback(new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(SurfaceHolder holder) {
-                    try {
-                        camera.start(cameraView.getHolder());
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    if (ActivityCompat.checkSelfPermission(CameraActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+                        requestCameraPermission();
+                    } else {
+                        try {
+                            camera.start(cameraView.getHolder());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
                 }
 
@@ -51,6 +60,34 @@ public class CameraActivity extends Activity {
                 }
             });
         }
+    }
+
+    private void requestCameraPermission() {
+
+        final String[] permissions = new String[]{Manifest.permission.CAMERA};
+
+        if (!ActivityCompat.shouldShowRequestPermissionRationale(this,
+                Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(this, permissions, RC_HANDLE_CAMERA_PERM);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == RC_HANDLE_CAMERA_PERM) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    camera.start(cameraView.getHolder());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            } else {
+            }
+        }
+
     }
 
     public void initCameraInstance(){
@@ -78,7 +115,8 @@ public class CameraActivity extends Activity {
 
             FaceDetector faceDetector = new FaceDetector.Builder(this).setClassificationType(FaceDetector.ALL_CLASSIFICATIONS).build();
 
-            camera = new CameraSource.Builder(this, faceDetector).setRequestedPreviewSize(640, 480).setFacing(CameraSource.CAMERA_FACING_FRONT).setAutoFocusEnabled(true).build();
+            camera = new CameraSource.Builder(this, faceDetector).setRequestedPreviewSize(1600, 1024)
+                    .setRequestedFps(15.0f).setFacing(CameraSource.CAMERA_FACING_FRONT).setAutoFocusEnabled(true).build();
 
             faceDetector.setProcessor(new Detector.Processor<Face>() {
                 @Override

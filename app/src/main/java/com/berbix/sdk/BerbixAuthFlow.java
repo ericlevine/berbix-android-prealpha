@@ -39,7 +39,8 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
                     }
                 }
             } else if (response.next.type.equals("done")) {
-                Toast.makeText(authActivity, response.next.code, Toast.LENGTH_LONG).show();
+                authActivity.finish();
+                BerbixSDK.shared.adapter().authorized(response.next.code);
             }
         }
     }

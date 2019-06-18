@@ -1,5 +1,6 @@
 package com.berbix.sdk.activities;
 
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentTransaction;
@@ -17,6 +18,8 @@ public class BerbixAuthActivity extends AppCompatActivity {
     public static KProgressHUD cProgressDialog = null;
 
     public BerbixIDCaptureFragment captureIDFragment = null;
+
+    private static final int RC_HANDLE_CAMERA_PERM = 2;
 
     public static void dismissProgressDialog() {
         if (cProgressDialog != null) {
@@ -36,6 +39,20 @@ public class BerbixAuthActivity extends AppCompatActivity {
         ft.commit();
 
         BerbixSDK.shared.auth().authActivity = this;
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == RC_HANDLE_CAMERA_PERM) {
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                captureIDFragment.startCamera();
+            } else {
+            }
+        }
+
     }
 
     public void verifyPhone() {

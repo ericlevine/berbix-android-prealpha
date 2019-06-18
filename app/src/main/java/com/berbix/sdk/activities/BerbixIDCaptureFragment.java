@@ -1,9 +1,12 @@
 package com.berbix.sdk.activities;
 
+import android.Manifest;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
@@ -21,6 +24,7 @@ import com.berbix.sdk.BerbixSDK;
 import com.berbix.sdk.bitmap.BerbixBitmapUtil;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
+import com.example.star.berbixdemo_android.CameraActivity;
 import com.example.star.berbixdemo_android.R;
 import com.google.android.gms.vision.CameraSource;
 import com.google.android.gms.vision.Detector;
@@ -54,6 +58,8 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
 
     private Barcode detectedBarcode = null;
     private Face detectedFace = null;
+
+    private static final int RC_HANDLE_CAMERA_PERM = 2;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -115,7 +121,8 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
         }
 
         camera = new CameraSource.Builder(getActivity(), detector)
-                .setRequestedPreviewSize(640, 480)
+                .setRequestedPreviewSize(1600, 1024)
+                .setRequestedFps(15.0f)
                 .setFacing(cameraPosition)
                 .setAutoFocusEnabled(true)
                 .build();
@@ -162,11 +169,7 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
             surfaceCallback = new SurfaceHolder.Callback() {
                 @Override
                 public void surfaceCreated(SurfaceHolder holder) {
-                    try {
-                        camera.start(cameraView.getHolder());
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                    startCamera();
                 }
 
                 @Override
@@ -182,13 +185,30 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
 
             cameraView.getHolder().addCallback(surfaceCallback);
         } else {
+            startCamera();
+        }
+
+    }
+
+    public void startCamera() {
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestCameraPermission();
+        } else {
             try {
                 camera.start(cameraView.getHolder());
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+    }
 
+    private void requestCameraPermission() {
+        final String[] permissions = new String[]{Manifest.permission.CAMERA};
+
+        if (!ActivityCompat.shouldShowRequestPermissionRationale(getActivity(),
+                Manifest.permission.CAMERA)) {
+            ActivityCompat.requestPermissions(getActivity(), permissions, RC_HANDLE_CAMERA_PERM);
+        }
     }
 
     public void refreshStatus() {

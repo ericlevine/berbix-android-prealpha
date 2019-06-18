@@ -7,11 +7,15 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.Toast;
 
 import com.berbix.sdk.BerbixEnvironment;
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixSDKAdapter;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter {
+
+    private Intent authIntent = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -22,26 +26,17 @@ public class MainActivity extends AppCompatActivity {
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                BerbixSDK.getAuthorized(MainActivity.this);
+                BerbixSDK.getAuthorized(MainActivity.this, MainActivity.this);
             }
         });
 
         findViewById(R.id.cameraButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, CameraActivity.class);
-                startActivity(intent);
+                authIntent = new Intent(MainActivity.this, CameraActivity.class);
+                startActivity(authIntent);
             }
         });
-
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
 
         // Configure
         BerbixSDK.shared.configure("LhcdxRRBrsB9ublAfwdcoVlH0MNnPxFJ",
@@ -69,5 +64,10 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void authorized(String code) {
+        Toast.makeText(this, code, Toast.LENGTH_LONG).show();
     }
 }
