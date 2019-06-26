@@ -46,6 +46,10 @@ interface BerbixAPIEndpoints {
     @POST("email-verification/{parent-id}")
     Call<BerbixResponse> verifyEmailCode(@Header("Authorization") String accessToken, @Path("parent-id") long parentId, @Field("code") String code);
 
+    @FormUrlEncoded
+    @POST("photo-id-scan-verification")
+    Call<BerbixResponse> submitPhotoIDScan(@Header("Authorization") String accessToken, @Field("payload") String payload);
+
     @Headers("Content-Type: application/json")
     @POST("photo-id-verification")
     Call<BerbixPhotoIDStatusResponse> startIDVerification(@Header("Authorization") String accessToken, @Body BerbixIDType idType);
@@ -63,11 +67,11 @@ interface BerbixAPIEndpoints {
     @FormUrlEncoded
     @POST("details-verification")
     Call<BerbixResponse> submitDetail(@Header("Authorization") String accessToken,
-                                                @Field("given_name") String givenName,
-                                                @Field("middle_name") String middleName,
-                                                @Field("family_name") String familyName,
-                                                @Field("date_of_birth") String birthday,
-                                                @Field("expiry_date") String expiryDate);
+                                      @Field("given_name") String givenName,
+                                      @Field("middle_name") String middleName,
+                                      @Field("family_name") String familyName,
+                                      @Field("date_of_birth") String birthday,
+                                      @Field("expiry_date") String expiryDate);
 }
 
 abstract class BerbixApiAdapter {
@@ -96,6 +100,8 @@ public class BerbixApiManager {
             return "https://api.sandbox.berbix.com/v0/";
         } else if (environment == BerbixEnvironment.STAGING) {
             return "https://api.staging.berbix.com/v0/";
+        } else if (environment == BerbixEnvironment.DEVELOPMENT) {
+            return "https://eric.dev.berbix.com:8443/v0/";
         } else {
             return "https://api.berbix.com/v0/";
         }
@@ -221,6 +227,33 @@ public class BerbixApiManager {
 
     public void verifyEmailCode(long parentId, String code) {
         apiEndpoints().verifyEmailCode(accessToken, parentId, code).enqueue(new Callback<BerbixResponse>() {
+            @Override
+            public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
+                if (response.isSuccessful()) {
+                    BerbixResponse resp = response.body();
+                    if (resp.code != 0) {
+                        adapter.failed(resp.error);
+                    } else {
+                        if (resp.next != null) {
+                            adapter.nextStep(resp);
+                        } else {
+
+                        }
+                    }
+                } else {
+                    adapter.failed("Something went wrong.");
+                }
+            }
+
+            @Override
+            public void onFailure(Call<BerbixResponse> call, Throwable t) {
+                adapter.failed("Could not connect to server.");
+            }
+        });
+    }
+
+    public void submitPhotoIDScan(String payload) {
+        apiEndpoints().submitPhotoIDScan(accessToken, payload).enqueue(new Callback<BerbixResponse>() {
             @Override
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {

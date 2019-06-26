@@ -39,9 +39,9 @@ public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter 
         });
 
         // Configure
-        BerbixSDK.shared.configure("LhcdxRRBrsB9ublAfwdcoVlH0MNnPxFJ",
-                "8VXTXAFaG0sjdOgVJk3mugt4zYeyBUCl");
-        BerbixSDK.shared.setEnvironment(BerbixEnvironment.STAGING);
+        BerbixSDK.shared.configure("Vhml95wQqhIuTEPMsbn-oqMFJFZfjAGz",
+                "bDZcIQMlhSnv4ame1x4M9YmgQXCbQqjw");
+        BerbixSDK.shared.setEnvironment(BerbixEnvironment.DEVELOPMENT);
     }
 
     @Override

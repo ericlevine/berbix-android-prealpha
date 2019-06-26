@@ -2,6 +2,7 @@ package com.berbix.sdk;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.berbix.sdk.activities.BerbixAuthActivity;
@@ -37,10 +38,12 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
                     } else {
                         BerbixSDK.shared.api().startPhotoIDVerification(null);
                     }
+                } else if (response.next.payload.type.equals("idscan")) {
+                    authActivity.startPhotoIDScan();
                 }
             } else if (response.next.type.equals("done")) {
                 authActivity.finish();
-                BerbixSDK.shared.adapter().authorized(response.next.code);
+                BerbixSDK.shared.adapter().authorized(response.next.payload.code);
             }
         }
     }

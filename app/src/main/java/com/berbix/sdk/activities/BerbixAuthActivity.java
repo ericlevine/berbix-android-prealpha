@@ -80,6 +80,13 @@ public class BerbixAuthActivity extends AppCompatActivity {
         ft.commit();
     }
 
+    public void startPhotoIDScan() {
+        BerbixPhotoIDScanFragment scanFragment = new BerbixPhotoIDScanFragment();
+        FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
+        ft.add(R.id.fragmentContainer, scanFragment);
+        ft.commit();
+    }
+
     public void chooseIDType() {
         BerbixChooseIdTypeFragment chooseIdTypeFragment = new BerbixChooseIdTypeFragment();
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
