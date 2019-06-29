@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
 import com.example.star.berbixdemo_android.R;
 import com.kaopiz.kprogresshud.KProgressHUD;
@@ -77,13 +78,13 @@ public class BerbixDetailsFragment extends Fragment {
             return;
         }
 
-        BerbixAuthActivity.cProgressDialog = KProgressHUD.create(getActivity())
+        BerbixFlowActivity.cProgressDialog = KProgressHUD.create(getActivity())
                 .setStyle(KProgressHUD.Style.SPIN_INDETERMINATE)
                 .setLabel("Submitting...")
                 .setCancellable(false)
                 .setDimAmount(0.5f)
                 .show();
-        BerbixSDK.shared.api().submitDetail(givenNameField.getText().toString(),
+        BerbixStateManager.getApiManager().submitDetail(givenNameField.getText().toString(),
                 middleNameField.getText().toString(),
                 familyNameField.getText().toString(),
                 birthdayField.getText().toString(),

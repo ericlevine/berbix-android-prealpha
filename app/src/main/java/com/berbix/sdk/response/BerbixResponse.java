@@ -21,4 +21,8 @@ public class BerbixResponse {
 
     @SerializedName("next")
     public BerbixNextResponse next;
+
+    public boolean isSuccessful() {
+        return code == 0;
+    }
 }

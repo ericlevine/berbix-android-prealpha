@@ -1,15 +1,12 @@
 package com.berbix.sdk;
 
-import android.graphics.Bitmap;
+import android.util.Log;
 
 import com.berbix.sdk.response.BerbixApiError;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixResponse;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.MediaType;
@@ -55,6 +52,15 @@ interface BerbixAPIEndpoints {
     Call<BerbixPhotoIDStatusResponse> startIDVerification(@Header("Authorization") String accessToken, @Body BerbixIDType idType);
 
     @Multipart
+    @POST("photo-id-verification")
+    Call<BerbixPhotoIDStatusResponse> startIDUpload(@Header("Authorization") String accessToken,
+                                                    @Part MultipartBody.Part file,
+                                                    @Part MultipartBody.Part scaled,
+                                                    @Part MultipartBody.Part barcode,
+                                                    @Part MultipartBody.Part side,
+                                                    @Part MultipartBody.Part exif);
+
+    @Multipart
     @POST("photo-id-verification/{parent-id}")
     Call<BerbixPhotoIDStatusResponse> uploadID(@Header("Authorization") String accessToken,
                                                @Path("parent-id") long parentId,
@@ -85,17 +91,24 @@ abstract class BerbixApiAdapter {
 
 public class BerbixApiManager {
 
-    BerbixEnvironment environment = BerbixEnvironment.STAGING;
+    private final BerbixApiAdapter adapter;
+    private final String baseURL;
+    private final BerbixConfiguration config;
+    private final BerbixEnvironment environment;
 
-    BerbixApiAdapter adapter = null;
+    private String accessToken = null;
 
-    String accessToken = null;
-
-    BerbixApiManager(BerbixApiAdapter adapter) {
+    BerbixApiManager(BerbixApiAdapter adapter, BerbixConfiguration config, BerbixEnvironment environment, String baseURL) {
         this.adapter = adapter;
+        this.config = config;
+        this.environment = environment;
+        this.baseURL = baseURL;
     }
 
-    private String baseURL() {
+    private String getBaseURL() {
+        if (this.baseURL != null) {
+            return this.baseURL;
+        }
         if (environment == BerbixEnvironment.SANDBOX) {
             return "https://api.sandbox.berbix.com/v0/";
         } else if (environment == BerbixEnvironment.STAGING) {
@@ -113,7 +126,7 @@ public class BerbixApiManager {
                 .readTimeout(100,TimeUnit.SECONDS).build();
 
         return new Retrofit.Builder()
-                .baseUrl(baseURL())
+                .baseUrl(getBaseURL())
                 .client(client)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
@@ -124,19 +137,20 @@ public class BerbixApiManager {
     }
 
     public void createSession() {
-        apiEndpoints().createSession(BerbixSDK.shared.config).enqueue(new Callback<BerbixResponse>() {
+        Log.e("call failure", "creating session");
+        apiEndpoints().createSession(config).enqueue(new Callback<BerbixResponse>() {
             @Override
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
-                        BerbixSDK.shared.api().accessToken = "bearer " + resp.token;
+                    if (resp != null && resp.isSuccessful()) {
+                        BerbixStateManager.getApiManager().accessToken = "bearer " + resp.token;
 
                         if (resp.next != null) {
                             adapter.nextStep(resp);
                         }
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -145,6 +159,7 @@ public class BerbixApiManager {
 
             @Override
             public void onFailure(Call<BerbixResponse> call, Throwable t) {
+                Log.e("call failure", t.getLocalizedMessage());
                 adapter.failed("Could not connect to server.");
             }
         });
@@ -157,10 +172,10 @@ public class BerbixApiManager {
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         adapter.phoneSubmitted(resp);
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -180,14 +195,14 @@ public class BerbixApiManager {
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         if (resp.next != null) {
                             adapter.nextStep(resp);
                         } else {
 
                         }
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -208,10 +223,10 @@ public class BerbixApiManager {
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         adapter.emailSubmitted(resp);
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -231,14 +246,14 @@ public class BerbixApiManager {
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         if (resp.next != null) {
                             adapter.nextStep(resp);
                         } else {
 
                         }
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -258,14 +273,14 @@ public class BerbixApiManager {
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         if (resp.next != null) {
                             adapter.nextStep(resp);
                         } else {
 
                         }
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -287,15 +302,15 @@ public class BerbixApiManager {
             type.idType = idType;
         }
 
-        apiEndpoints().startIDVerification (accessToken, type).enqueue(new Callback<BerbixPhotoIDStatusResponse>() {
+        apiEndpoints().startIDVerification(accessToken, type).enqueue(new Callback<BerbixPhotoIDStatusResponse>() {
             @Override
             public void onResponse(Call<BerbixPhotoIDStatusResponse> call, Response<BerbixPhotoIDStatusResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixPhotoIDStatusResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         adapter.startIDCapture(resp);
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     adapter.failed("Something went wrong.");
@@ -307,6 +322,21 @@ public class BerbixApiManager {
                 adapter.failed("Could not connect to server.");
             }
         });
+    }
+
+    public Call<BerbixPhotoIDStatusResponse> startUploadCall(
+            long parentId,
+            MultipartBody.Part filePart,
+            MultipartBody.Part scaledPart,
+            MultipartBody.Part barcodePart,
+            MultipartBody.Part sidePart,
+            MultipartBody.Part exifPart) {
+
+        if (parentId > 0) {
+            return apiEndpoints().uploadID(accessToken, parentId, filePart, scaledPart, barcodePart, sidePart, exifPart);
+        } else {
+            return apiEndpoints().startIDUpload(accessToken, filePart, scaledPart, barcodePart, sidePart, exifPart);
+        }
     }
 
     public void uploadPhotoId(long parentId, String side,
@@ -331,18 +361,18 @@ public class BerbixApiManager {
 
         if (barcode != null) {
             RequestBody reqFile = RequestBody.create(MediaType.parse("image/*"), barcode);
-            barcodePart = MultipartBody.Part.createFormData("barcode", "barcode.jpg", reqFile);
+            barcodePart = MultipartBody.Part.createFormData("barcode", "barcode.png", reqFile);
         }
 
-        apiEndpoints().uploadID(accessToken, parentId, filePart, scaledPart, barcodePart, sidePart, exif).enqueue(new Callback<BerbixPhotoIDStatusResponse>() {
+        startUploadCall(parentId, filePart, scaledPart, barcodePart, sidePart, exif).enqueue(new Callback<BerbixPhotoIDStatusResponse>() {
             @Override
             public void onResponse(Call<BerbixPhotoIDStatusResponse> call, Response<BerbixPhotoIDStatusResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixPhotoIDStatusResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         adapter.photoUploaded(resp);
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     BerbixApiError error = BerbixApiError.parseError(response, client());
@@ -363,10 +393,10 @@ public class BerbixApiManager {
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
-                    if (resp.code != 0) {
-                        adapter.failed(resp.error);
-                    } else {
+                    if (resp != null && resp.isSuccessful()) {
                         adapter.nextStep(resp);
+                    } else {
+                        adapter.failed(resp.error);
                     }
                 } else {
                     BerbixApiError error = BerbixApiError.parseError(response, client());

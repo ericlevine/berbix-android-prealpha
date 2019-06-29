@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.berbix.sdk.bitmap.BerbixBitmapUtil;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
@@ -129,7 +130,7 @@ public class BerbixPhotoIDScanFragment extends Fragment implements View.OnClickL
                     if (detections.getDetectedItems().size() > 0) {
                         submitting = true;
                         Barcode detectedBarcode = detections.getDetectedItems().valueAt(0);
-                        BerbixSDK.shared.api().submitPhotoIDScan(detectedBarcode.rawValue);
+                        BerbixStateManager.getApiManager().submitPhotoIDScan(detectedBarcode.rawValue);
                     }
                 }
             }

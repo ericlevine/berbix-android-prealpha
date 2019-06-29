@@ -1,5 +1,7 @@
 package com.berbix.sdk;
 
 public interface BerbixSDKAdapter {
-    void authorized(String code);
+    void onComplete();
+    void onReady();
+    void onError(Throwable t);
 }

@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.example.star.berbixdemo_android.R;
 import com.kaopiz.kprogresshud.KProgressHUD;
 
@@ -54,7 +55,7 @@ public class BerbixVerifyCodeFragment extends Fragment {
             return;
         }
 
-        BerbixAuthActivity.cProgressDialog = KProgressHUD.create(getActivity())
+        BerbixFlowActivity.cProgressDialog = KProgressHUD.create(getActivity())
                 .setStyle(KProgressHUD.Style.SPIN_INDETERMINATE)
                 .setLabel("Verifying Code...")
                 .setCancellable(false)
@@ -62,9 +63,9 @@ public class BerbixVerifyCodeFragment extends Fragment {
                 .show();
 
         if (isPhoneVerification) {
-            BerbixSDK.shared.api().verifyPhoneCode(parentId, verifyCodeField.getText().toString());
+            BerbixStateManager.getApiManager().verifyPhoneCode(parentId, verifyCodeField.getText().toString());
         } else {
-            BerbixSDK.shared.api().verifyEmailCode(parentId, verifyCodeField.getText().toString());
+            BerbixStateManager.getApiManager().verifyEmailCode(parentId, verifyCodeField.getText().toString());
         }
     }
 }

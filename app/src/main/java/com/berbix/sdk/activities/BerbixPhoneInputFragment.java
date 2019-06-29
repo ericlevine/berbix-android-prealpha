@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.Toast;
 
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.example.star.berbixdemo_android.R;
 import com.kaopiz.kprogresshud.KProgressHUD;
 
@@ -50,13 +51,13 @@ public class BerbixPhoneInputFragment extends Fragment {
             return;
         }
 
-        BerbixAuthActivity.cProgressDialog = KProgressHUD.create(getActivity())
+        BerbixFlowActivity.cProgressDialog = KProgressHUD.create(getActivity())
                 .setStyle(KProgressHUD.Style.SPIN_INDETERMINATE)
                 .setLabel("Sending Code...")
                 .setCancellable(false)
                 .setDimAmount(0.5f)
                 .show();
 
-        BerbixSDK.shared.api().verifyPhone(phoneNumberField.getText().toString());
+        BerbixStateManager.getApiManager().verifyPhone(phoneNumberField.getText().toString());
     }
 }

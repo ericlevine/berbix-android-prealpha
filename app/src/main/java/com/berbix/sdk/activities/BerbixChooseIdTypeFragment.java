@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.example.star.berbixdemo_android.R;
 import com.kaopiz.kprogresshud.KProgressHUD;
 
@@ -33,7 +34,7 @@ public class BerbixChooseIdTypeFragment extends Fragment {
             @Override
             public void onClick(View v) {
 
-                BerbixAuthActivity.cProgressDialog = KProgressHUD.create(getActivity())
+                BerbixFlowActivity.cProgressDialog = KProgressHUD.create(getActivity())
                         .setStyle(KProgressHUD.Style.SPIN_INDETERMINATE)
                         .setLabel("Preparing...")
                         .setCancellable(false)
@@ -41,9 +42,9 @@ public class BerbixChooseIdTypeFragment extends Fragment {
                         .show();
 
                 if (v.getId() == R.id.cardButton) {
-                    BerbixSDK.shared.api().startPhotoIDVerification("card");
+                    BerbixStateManager.getApiManager().startPhotoIDVerification("card");
                 } else {
-                    BerbixSDK.shared.api().startPhotoIDVerification("passport");
+                    BerbixStateManager.getApiManager().startPhotoIDVerification("passport");
                 }
             }
         };

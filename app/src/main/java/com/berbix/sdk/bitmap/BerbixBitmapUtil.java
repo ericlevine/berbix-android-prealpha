@@ -160,7 +160,7 @@ public class BerbixBitmapUtil {
 
                 break;
             case 0:
-                // if orientation is zero we don't need to rotate this
+                bitmapPicture = bitmap;
 
             default:
                 break;
@@ -205,12 +205,31 @@ public class BerbixBitmapUtil {
         return Bitmap.createBitmap(bmp, x, y, width, height);
     }
 
-    public static File saveToFile(Context context, Bitmap bmp, String filename) {
+    public static File saveToJpg(Context context, Bitmap bmp, String filename) {
         File f = new File(context.getCacheDir(), filename);
         try {
             f.createNewFile();
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            bmp.compress(Bitmap.CompressFormat.JPEG, 0, bos);
+            bmp.compress(Bitmap.CompressFormat.JPEG, 80, bos);
+            byte[] bitmapdata = bos.toByteArray();
+
+            FileOutputStream fos = new FileOutputStream(f);
+            fos.write(bitmapdata);
+            fos.flush();
+            fos.close();
+        } catch (IOException e) {
+            return null;
+        }
+
+        return f;
+    }
+
+    public static File saveToPng(Context context, Bitmap bmp, String filename) {
+        File f = new File(context.getCacheDir(), filename);
+        try {
+            f.createNewFile();
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            bmp.compress(Bitmap.CompressFormat.PNG, 0, bos);
             byte[] bitmapdata = bos.toByteArray();
 
             FileOutputStream fos = new FileOutputStream(f);

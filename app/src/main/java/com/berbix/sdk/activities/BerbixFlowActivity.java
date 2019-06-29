@@ -6,14 +6,14 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 
-import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
 import com.berbix.sdk.response.BerbixResponse;
 import com.example.star.berbixdemo_android.R;
 import com.kaopiz.kprogresshud.KProgressHUD;
 
-public class BerbixAuthActivity extends AppCompatActivity {
+public class BerbixFlowActivity extends AppCompatActivity {
 
     public static KProgressHUD cProgressDialog = null;
 
@@ -38,7 +38,7 @@ public class BerbixAuthActivity extends AppCompatActivity {
         ft.add(R.id.fragmentContainer, initFragment);
         ft.commit();
 
-        BerbixSDK.shared.auth().authActivity = this;
+        BerbixStateManager.getAuthFlow().setActivity(this);
     }
 
     @Override

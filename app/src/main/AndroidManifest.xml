@@ -22,7 +22,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.berbix.sdk.activities.BerbixAuthActivity"
+            android:name="com.berbix.sdk.activities.BerbixFlowActivity"
             android:label="Berbix Verification"/>
         <activity android:name=".CameraActivity"/>
     </application>

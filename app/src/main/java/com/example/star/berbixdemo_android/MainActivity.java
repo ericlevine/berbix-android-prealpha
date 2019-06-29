@@ -9,13 +9,15 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.berbix.sdk.BerbixEnvironment;
 import com.berbix.sdk.BerbixSDK;
 import com.berbix.sdk.BerbixSDKAdapter;
+import com.berbix.sdk.BerbixSDKOptions;
+import com.berbix.sdk.BerbixSDKOptionsBuilder;
 
 public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter {
 
     private Intent authIntent = null;
+    private BerbixSDK berbixSDK = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +28,7 @@ public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter 
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                BerbixSDK.getAuthorized(MainActivity.this, MainActivity.this);
+                berbixSDK.startFlow(MainActivity.this, MainActivity.this);
             }
         });
 
@@ -38,10 +40,11 @@ public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter 
             }
         });
 
-        // Configure
-        BerbixSDK.shared.configure("Vhml95wQqhIuTEPMsbn-oqMFJFZfjAGz",
-                "bDZcIQMlhSnv4ame1x4M9YmgQXCbQqjw");
-        BerbixSDK.shared.setEnvironment(BerbixEnvironment.DEVELOPMENT);
+        BerbixSDKOptions options = new BerbixSDKOptionsBuilder()
+                .setRoleKey("K0JsN3jJaA92hakCrKMbXz1t1NUns8-A")
+                .setBaseURL("https://eric.dev.berbix.com:8443/v0/")
+                .build();
+        berbixSDK = new BerbixSDK("OqrzpLpafz17ETzVOlR367m5l0rC7m9c", options);
     }
 
     @Override
@@ -66,8 +69,13 @@ public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter 
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    public void authorized(String code) {
-        Toast.makeText(this, code, Toast.LENGTH_LONG).show();
+    public void onComplete() {
+        Toast.makeText(this, "flow completed", Toast.LENGTH_LONG).show();
     }
+
+    @Override
+    public void onReady() { }
+
+    @Override
+    public void onError(Throwable t) { }
 }

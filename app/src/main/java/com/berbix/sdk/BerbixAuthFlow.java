@@ -2,82 +2,95 @@ package com.berbix.sdk;
 
 import android.content.Context;
 import android.content.Intent;
-import android.util.Log;
 import android.widget.Toast;
 
-import com.berbix.sdk.activities.BerbixAuthActivity;
+import com.berbix.sdk.activities.BerbixFlowActivity;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
 import com.berbix.sdk.response.BerbixResponse;
 
 public class BerbixAuthFlow extends BerbixApiAdapter {
 
-    Context context = null;
-    BerbixPhotoIdPayload idParam = null;
+    public interface BerbixAuthFlowAdapter {
+        void receiveCode(String code);
+    }
 
-    public BerbixAuthActivity authActivity = null;
+    public BerbixAuthFlow(BerbixAuthFlowAdapter adapter) {
+        this.adapter = adapter;
+    }
 
-    void startAuthFlow() {
-        Intent authIntent = new Intent(context, BerbixAuthActivity.class);
+    private final BerbixAuthFlowAdapter adapter;
+
+    private Context context = null;
+    private BerbixPhotoIdPayload idParam = null;
+
+    public BerbixFlowActivity activity = null;
+
+    void startAuthFlow(Context context) {
+        Intent authIntent = new Intent(context, BerbixFlowActivity.class);
         context.startActivity(authIntent);
+        this.context = context;
     }
 
     void nextStep(BerbixResponse response) {
-        BerbixAuthActivity.dismissProgressDialog();
+        BerbixFlowActivity.dismissProgressDialog();
 
         if (response.next != null) {
             if (response.next.type.equals("verification")) {
                 if (response.next.payload.type.equals("phone")) {
-                    authActivity.verifyPhone();
+                    activity.verifyPhone();
                 } else if (response.next.payload.type.equals("email")) {
-                    authActivity.verifyEmail();
+                    activity.verifyEmail();
                 } else if (response.next.payload.type.equals("photoid")) {
                     idParam = response.next.payload.photoIdDetails;
                     if (response.next.payload.photoIdDetails.idTypes.equals("card_or_passport")) {
-                        authActivity.chooseIDType();
+                        activity.chooseIDType();
                     } else {
-                        BerbixSDK.shared.api().startPhotoIDVerification(null);
+                        activity.captureID(null, response.next.payload.photoIdDetails);
                     }
                 } else if (response.next.payload.type.equals("idscan")) {
-                    authActivity.startPhotoIDScan();
+                    activity.startPhotoIDScan();
                 }
             } else if (response.next.type.equals("done")) {
-                authActivity.finish();
-                BerbixSDK.shared.adapter().authorized(response.next.payload.code);
+                activity.finish();
+                adapter.receiveCode(response.next.payload.code);
             }
         }
     }
 
     void phoneSubmitted(BerbixResponse response) {
-        BerbixAuthActivity.dismissProgressDialog();
-        authActivity.verifyCode(response.id, true);
+        BerbixFlowActivity.dismissProgressDialog();
+        activity.verifyCode(response.id, true);
     }
 
     void emailSubmitted(BerbixResponse response) {
-        BerbixAuthActivity.dismissProgressDialog();
-        authActivity.verifyCode(response.id, false);
+        BerbixFlowActivity.dismissProgressDialog();
+        activity.verifyCode(response.id, false);
     }
 
     void photoUploaded(BerbixPhotoIDStatusResponse response) {
-        BerbixAuthActivity.dismissProgressDialog();
+        BerbixFlowActivity.dismissProgressDialog();
 
         if (response.next != null && response.next.type.equals("verification")) {
-            authActivity.verifyDetail(response);
+            activity.verifyDetail(response);
         } else {
-            authActivity.captureIDFragment.idStatus = response;
-            authActivity.captureIDFragment.refreshStatus();
+            activity.captureIDFragment.updateState(response);
         }
     }
 
     void startIDCapture(BerbixPhotoIDStatusResponse response) {
-        BerbixAuthActivity.dismissProgressDialog();
+        BerbixFlowActivity.dismissProgressDialog();
 
-        authActivity.captureID(response, idParam);
+        activity.captureID(response, idParam);
     }
 
     void failed(String error) {
-        BerbixAuthActivity.dismissProgressDialog();
+        BerbixFlowActivity.dismissProgressDialog();
 
         Toast.makeText(context, error, Toast.LENGTH_LONG).show();
+    }
+
+    public void setActivity(BerbixFlowActivity activity) {
+        this.activity = activity;
     }
 }

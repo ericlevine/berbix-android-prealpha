@@ -2,48 +2,34 @@ package com.berbix.sdk;
 
 import android.content.Context;
 
-public class BerbixSDK {
-
-    public static BerbixSDK shared = new BerbixSDK();
-
-    BerbixConfiguration config;
-
-    private BerbixApiManager apiManager;
-    private BerbixAuthFlow authFlow;
+public class BerbixSDK implements BerbixAuthFlow.BerbixAuthFlowAdapter {
+    private final BerbixAuthFlow authFlow;
+    private final BerbixApiManager apiManager;
 
     private BerbixSDKAdapter adapter;
 
-    public BerbixSDK() {
-        config = new BerbixConfiguration();
-        authFlow = new BerbixAuthFlow();
-        apiManager = new BerbixApiManager(authFlow);
-    }
-
-    public void configure(String clientID, String roleKey) {
+    public BerbixSDK(String clientID, BerbixSDKOptions options) {
+        BerbixConfiguration config = new BerbixConfiguration();
         config.clientID = clientID;
-        config.roleKey = roleKey;
-        config.mode = "rn";
+        config.roleKey = options.getRoleKey();
+        config.mode = "android";
+
+        this.authFlow = new BerbixAuthFlow(this);
+        this.apiManager = new BerbixApiManager(
+                this.authFlow,
+                config,
+                options.getEnvironment(),
+                options.getBaseURL());
     }
 
-    public void setEnvironment(BerbixEnvironment environment) {
-        apiManager.environment = environment;
+    public void startFlow(Context context, BerbixSDKAdapter adapter) {
+        BerbixStateManager.configure(apiManager, authFlow);
+        this.adapter = adapter;
+        this.authFlow.startAuthFlow(context);
     }
 
-    public BerbixApiManager api() {
-        return apiManager;
-    }
-
-    public BerbixAuthFlow auth() {
-        return authFlow;
-    }
-
-    public BerbixSDKAdapter adapter() {
-        return this.adapter;
-    }
-
-    public static void getAuthorized(Context context, BerbixSDKAdapter adapter) {
-        shared.adapter = adapter;
-        shared.authFlow.context = context;
-        shared.authFlow.startAuthFlow();
+    @Override
+    public void receiveCode(String code) {
+        adapter.onComplete();
     }
 }

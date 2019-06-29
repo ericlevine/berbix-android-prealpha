@@ -9,6 +9,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.berbix.sdk.BerbixSDK;
+import com.berbix.sdk.BerbixStateManager;
 import com.example.star.berbixdemo_android.R;
 
 public class BerbixInitializationFragment extends Fragment {
@@ -28,7 +29,7 @@ public class BerbixInitializationFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        BerbixSDK.shared.api().createSession();
+        BerbixStateManager.getApiManager().createSession();
 
     }
 }
