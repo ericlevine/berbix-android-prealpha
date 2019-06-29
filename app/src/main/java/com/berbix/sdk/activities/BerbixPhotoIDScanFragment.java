@@ -8,7 +8,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
-import android.util.DisplayMetrics;
 import android.view.LayoutInflater;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -18,11 +17,8 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import com.berbix.sdk.BerbixSDK;
 import com.berbix.sdk.BerbixStateManager;
-import com.berbix.sdk.bitmap.BerbixBitmapUtil;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
 import com.example.star.berbixdemo_android.R;
@@ -31,10 +27,7 @@ import com.google.android.gms.vision.Detector;
 import com.google.android.gms.vision.barcode.Barcode;
 import com.google.android.gms.vision.barcode.BarcodeDetector;
 import com.google.android.gms.vision.face.Face;
-import com.google.android.gms.vision.face.FaceDetector;
-import com.kaopiz.kprogresshud.KProgressHUD;
 
-import java.io.File;
 import java.io.IOException;
 
 public class BerbixPhotoIDScanFragment extends Fragment implements View.OnClickListener {

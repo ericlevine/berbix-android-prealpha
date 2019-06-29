@@ -21,7 +21,6 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.berbix.sdk.BerbixSDK;
 import com.berbix.sdk.BerbixStateManager;
 import com.berbix.sdk.bitmap.BerbixBitmapUtil;
 import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
@@ -39,6 +38,9 @@ import java.io.File;
 import java.io.IOException;
 
 public class BerbixIDCaptureFragment extends Fragment implements View.OnClickListener {
+
+    private static double CARD_RATIO = 1.6;
+    private static double PASSPORT_RATIO = 1.3;
 
     public BerbixPhotoIDStatusResponse idStatus = null;
     public BerbixPhotoIdPayload param = null;
@@ -59,6 +61,9 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
 
     private Barcode detectedBarcode = null;
     private Face detectedFace = null;
+
+    private long barcodeDetectedAt = 0;
+    private boolean capturing = false;
 
     private static final int RC_HANDLE_CAMERA_PERM = 2;
     private static final int NOT_DONE = 0;
@@ -116,6 +121,19 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
         return Step.DONE;
     }
 
+    private Detector getDetector() {
+        Step step = getStep();
+        if (step == Step.BACK) {
+            return new BarcodeDetector.Builder(getActivity())
+                    .setBarcodeFormats(Barcode.PDF417)
+                    .build();
+        } else {
+            return new FaceDetector.Builder(getActivity())
+                    .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
+                    .build();
+        }
+    }
+
     private int cameraDirection() {
         switch (getStep()) {
             case SELFIE:
@@ -126,24 +144,31 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
         }
     }
 
+    private double aspectRatio() {
+        if (idStatus != null) {
+            if ("card".equals(idStatus.idType)) {
+                return CARD_RATIO;
+            } else {
+                return PASSPORT_RATIO;
+            }
+        } else if (param != null) {
+            if ("passport".equals(param.idTypes)) {
+                return PASSPORT_RATIO;
+            } else {
+                return CARD_RATIO;
+            }
+        }
+        return CARD_RATIO;
+    }
+
     void initCameraInstance(){
         if (camera != null) {
             camera.stop();
             camera.release();
         }
 
-        Detector detector = null;
+        Detector detector = getDetector();
         int cameraPosition = cameraDirection();
-
-        if (getStep() == Step.BACK) {
-            detector = new BarcodeDetector.Builder(getActivity())
-                    .setBarcodeFormats(Barcode.PDF417)
-                    .build();
-        } else {
-            detector = new FaceDetector.Builder(getActivity())
-                    .setClassificationType(FaceDetector.ALL_CLASSIFICATIONS)
-                    .build();
-        }
 
         camera = new CameraSource.Builder(getActivity(), detector)
                 .setRequestedPreviewSize(1600, 1024)
@@ -165,11 +190,11 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
                         if (detections.getDetectedItems().size() > 0) {
                             detectedBarcode = detections.getDetectedItems().valueAt(0);
 
-                            if (idStatus.backStatus == 0 && idStatus.idType.equals("card")) {
-                                if (idStatus.backFormat.equals("pdf417")) {
-                                    capturePhoto();
-                                }
+                            long now = System.currentTimeMillis();
+                            if (now - barcodeDetectedAt < 500) {
+                                capturePhoto();
                             }
+                            barcodeDetectedAt = now;
                         }
                     }
                 });
@@ -277,18 +302,19 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
     }
 
     void capturePhoto() {
+        if (capturing) {
+            return;
+        }
+
+        capturing = true;
+
         camera.takePicture(null, new CameraSource.PictureCallback() {
             @Override
             public void onPictureTaken(byte[] bytes) {
+                capturing = false;
+
                 camera.stop();
                 capturedPhoto = BerbixBitmapUtil.fixOrientation(bytes);
-                if (detectedBarcode != null) {
-                    DisplayMetrics displayMetrics = getActivity().getResources().getDisplayMetrics();
-                    tempImageView.setImageBitmap(BerbixBitmapUtil.cropDetected(capturedPhoto, detectedBarcode.getBoundingBox(), cameraView.getMeasuredWidth(), cameraView.getMeasuredHeight(), displayMetrics.density));
-                } else {
-                    tempImageView.setImageBitmap(BerbixBitmapUtil.cropBitmap(capturedPhoto));
-                }
-                Log.e("image size", String.format("%d, %d", capturedPhoto.getWidth(), capturedPhoto.getHeight()));
                 Bitmap scaled = Bitmap.createScaledBitmap(capturedPhoto, capturedPhoto.getWidth() / 2, capturedPhoto.getHeight() / 2, false);
                 tempImageView.setImageBitmap(scaled);
                 tempImageView.setVisibility(View.VISIBLE);
@@ -325,19 +351,20 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
         File scaled = BerbixBitmapUtil.saveToJpg(getActivity(), capturedPhoto, "scaled.jpg");
 
         long id = this.verificationId();
+        Step step = getStep();
 
-        if (frontStatus() == NOT_DONE) {
-            Bitmap cropped = BerbixBitmapUtil.cropBitmap(capturedPhoto);
+        if (step == Step.FRONT) {
+            Bitmap cropped = BerbixBitmapUtil.cropBitmap(capturedPhoto, aspectRatio());
             File croppedFile = BerbixBitmapUtil.saveToJpg(getActivity(), cropped, "file.jpg");
             BerbixStateManager.getApiManager().uploadPhotoId(id, "front", croppedFile, scaled, null);
-        } else if (idStatus.backStatus == NOT_DONE && idStatus.idType.equals("card")) {
+        } else if (step == Step.BACK) {
             if (detectedBarcode == null) {
                 BerbixFlowActivity.dismissProgressDialog();
                 Toast.makeText(getActivity(), "No Barcode Detected.", Toast.LENGTH_LONG).show();
                 return;
             }
 
-            Bitmap cropped = BerbixBitmapUtil.cropBitmap(capturedPhoto);
+            Bitmap cropped = BerbixBitmapUtil.cropBitmap(capturedPhoto, aspectRatio());
             File croppedFile = BerbixBitmapUtil.saveToJpg(getActivity(), cropped, "file.jpg");
 
             Log.e("barcode bounding box", detectedBarcode.getBoundingBox().toString());
@@ -347,7 +374,7 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
             File barcode = BerbixBitmapUtil.saveToPng(getActivity(), barcodeBmp, "barcode.png");
 
             BerbixStateManager.getApiManager().uploadPhotoId(id, "back", croppedFile, scaled, barcode);
-        } else if (idStatus.selfieStatus == NOT_DONE && param.selfieMatch) {
+        } else if (step == Step.SELFIE) {
             if (detectedFace == null) {
                 BerbixFlowActivity.dismissProgressDialog();
                 Toast.makeText(getActivity(), "No Face Detected.", Toast.LENGTH_LONG).show();
@@ -355,11 +382,11 @@ public class BerbixIDCaptureFragment extends Fragment implements View.OnClickLis
             }
 
             DisplayMetrics displayMetrics = getActivity().getResources().getDisplayMetrics();
-            Bitmap faceBmp = BerbixBitmapUtil.cropFace(capturedPhoto, detectedFace, cameraView.getWidth(), cameraView.getHeight(), displayMetrics.density);
+            Bitmap faceBmp = BerbixBitmapUtil.cropFace(capturedPhoto, detectedFace, displayMetrics.widthPixels, displayMetrics.heightPixels, displayMetrics.density);
             File face = BerbixBitmapUtil.saveToJpg(getActivity(), faceBmp, "barcode.jpg");
 
             BerbixStateManager.getApiManager().uploadPhotoId(id, "selfie", null, face, null);
-        } else if (idStatus.livenessStatus == NOT_DONE && param.livenessCheck) {
+        } else if (step == Step.LIVENESS) {
             if (detectedFace == null) {
                 BerbixFlowActivity.dismissProgressDialog();
                 Toast.makeText(getActivity(), "No Face Detected.", Toast.LENGTH_LONG).show();

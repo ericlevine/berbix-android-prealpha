@@ -143,7 +143,7 @@ public class BerbixBitmapUtil {
 
     public static Bitmap fixOrientation(byte[] bytes) {
         int orientation = getOrientation(bytes);
-        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes , 0, bytes .length);
+        Bitmap bitmap = BitmapFactory.decodeByteArray(bytes ,0, bytes.length);
         Bitmap bitmapPicture = null;
 
         switch(orientation) {
@@ -169,25 +169,42 @@ public class BerbixBitmapUtil {
         return bitmapPicture;
     }
 
-    public static Bitmap cropBitmap(Bitmap bmp) {
-        int width = (int) (bmp.getWidth() * 0.8);
-        int height = (int) (bmp.getHeight() * 0.4);
-        int x = (int) (bmp.getWidth() * 0.1);
-        int y = (int) (bmp.getHeight() * 0.3);
+    private static Bitmap scaleBitmap(Bitmap bmp, int targetWidth) {
+        double scale = (double) bmp.getWidth() / targetWidth;
 
-        return Bitmap.createBitmap(bmp, x, y, width, height);
+        return Bitmap.createScaledBitmap(bmp, (int) (bmp.getWidth() / scale), (int) (bmp.getHeight() / scale), false);
+    }
+
+    public static Bitmap cropBitmap(Bitmap bmp, double ratio) {
+        int width = (int) (bmp.getWidth() * 0.8);
+        int height = (int) (width / ratio);
+        int x = ((bmp.getWidth() - width) / 2);
+        int y = ((bmp.getHeight() - height) / 2);
+
+        Bitmap cropped = Bitmap.createBitmap(bmp, x, y, width, height);
+
+        return scaleBitmap(cropped, 800);
     }
 
     public static Bitmap cropDetected(Bitmap bmp, Rect bound, int screenWidth, int screenHeight, double density) {
 
-        double rate = ((double) bmp.getWidth() / (double) screenWidth) * density;
+        double xScale = (double) bmp.getWidth() / screenWidth;
+        double yScale = (double) bmp.getHeight() / screenHeight;
 
-        int x = (int)((bound.left - 5) * rate);
-        int y = (int)((bound.top - 33) * rate);
-        int width = Math.min((int)(bound.width() * rate), bmp.getWidth() - x);
-        int height = Math.min((int)(bound.height() * rate), bmp.getHeight() - y);
+        double scaledX = bound.left * xScale;
+        double scaledY = bound.top * yScale;
+        double scaledWidth = bound.width() * xScale;
+        double scaledHeight = bound.height() * yScale;
 
-        return Bitmap.createBitmap(bmp, x, y, width, height);
+        int cropMinX = Math.max(0, (int) Math.round(scaledX - (scaledWidth * 0.2)));
+        int cropMaxX = Math.min(bmp.getWidth(), (int) Math.round(scaledX + (scaledWidth * 1.2)));
+
+        int cropMinY = Math.max(0, (int) Math.round(scaledY - (scaledHeight * 0.2)));
+        int cropMaxY = Math.min(bmp.getHeight(), (int) Math.round(scaledY + (scaledHeight * 1.2)));
+
+        Bitmap cropped = Bitmap.createBitmap(bmp, cropMinX, cropMinY, cropMaxX - cropMinX, cropMaxY - cropMinY);
+
+        return scaleBitmap(cropped, 800);
     }
 
     public static Bitmap cropFace(Bitmap bmp, Face face, int screenWidth, int screenHeight, double density) {
