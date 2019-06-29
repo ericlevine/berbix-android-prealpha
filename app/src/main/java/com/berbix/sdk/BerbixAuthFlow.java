@@ -9,7 +9,7 @@ import com.berbix.sdk.response.BerbixPhotoIDStatusResponse;
 import com.berbix.sdk.response.BerbixPhotoIdPayload;
 import com.berbix.sdk.response.BerbixResponse;
 
-public class BerbixAuthFlow extends BerbixApiAdapter {
+public class BerbixAuthFlow extends BerbixAPIManager.BerbixAPIAdapter {
 
     public interface BerbixAuthFlowAdapter {
         void receiveCode(String code);
@@ -23,6 +23,7 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
 
     private Context context = null;
     private BerbixPhotoIdPayload idParam = null;
+    private BerbixResponse sessionResponse = null;
 
     public BerbixFlowActivity activity = null;
 
@@ -30,10 +31,28 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
         Intent authIntent = new Intent(context, BerbixFlowActivity.class);
         context.startActivity(authIntent);
         this.context = context;
+
+        if (sessionResponse == null) {
+            BerbixStateManager.getApiManager().createSession(null);
+        }
+    }
+
+    void createSession(final Runnable callback) {
+        BerbixStateManager.getApiManager().createSession(new BerbixAPIManager.ResponseConsumer() {
+            @Override
+            public void consume(BerbixResponse response) {
+                sessionResponse = response;
+                callback.run();
+            }
+        });
     }
 
     void nextStep(BerbixResponse response) {
         BerbixFlowActivity.dismissProgressDialog();
+
+        if (activity == null) {
+            return;
+        }
 
         if (response.next != null) {
             if (response.next.type.equals("verification")) {
@@ -48,6 +67,8 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
                     } else {
                         activity.captureID(null, response.next.payload.photoIdDetails);
                     }
+                } else if (response.next.payload.type.equals("details")) {
+                    activity.verifyDetail(response.next.payload.photoIdDetails);
                 } else if (response.next.payload.type.equals("idscan")) {
                     activity.startPhotoIDScan();
                 }
@@ -71,10 +92,10 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
     void photoUploaded(BerbixPhotoIDStatusResponse response) {
         BerbixFlowActivity.dismissProgressDialog();
 
-        if (response.next != null && response.next.type.equals("verification")) {
-            activity.verifyDetail(response);
+        if (response.next != null) {
+            nextStep(response);
         } else {
-            activity.captureIDFragment.updateState(response);
+            activity.updateCaptureFragmentState(response);
         }
     }
 
@@ -92,5 +113,9 @@ public class BerbixAuthFlow extends BerbixApiAdapter {
 
     public void setActivity(BerbixFlowActivity activity) {
         this.activity = activity;
+
+        if (sessionResponse != null) {
+            nextStep(sessionResponse);
+        }
     }
 }

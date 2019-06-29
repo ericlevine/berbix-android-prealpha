@@ -7,6 +7,9 @@ public class BerbixPhotoIdPayload {
     @SerializedName("given_name")
     public String givenName;
 
+    @SerializedName("middle_name")
+    public String middleName;
+
     @SerializedName("family_name")
     public String familyName;
 

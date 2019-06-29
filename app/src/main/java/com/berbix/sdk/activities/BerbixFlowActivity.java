@@ -17,7 +17,7 @@ public class BerbixFlowActivity extends AppCompatActivity {
 
     public static KProgressHUD cProgressDialog = null;
 
-    public BerbixIDCaptureFragment captureIDFragment = null;
+    private BerbixIDCaptureFragment captureIDFragment = null;
 
     private static final int RC_HANDLE_CAMERA_PERM = 2;
 
@@ -103,12 +103,16 @@ public class BerbixFlowActivity extends AppCompatActivity {
         ft.commit();
     }
 
-    public void verifyDetail(BerbixResponse idParam) {
+    public void verifyDetail(BerbixPhotoIdPayload idParam) {
         BerbixDetailsFragment detailsFragment = new BerbixDetailsFragment();
-        detailsFragment.param = idParam.next.payload.photoIdDetails;
+        detailsFragment.param = idParam;
         FragmentTransaction ft = getSupportFragmentManager().beginTransaction();
         ft.add(R.id.fragmentContainer, detailsFragment);
         ft.commit();
+    }
+
+    public void updateCaptureFragmentState(BerbixPhotoIDStatusResponse response) {
+        this.captureIDFragment.updateState(response);
     }
 
 }

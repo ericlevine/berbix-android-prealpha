@@ -15,7 +15,3 @@ class BerbixConfiguration {
 
 }
 
-class BerbixIDType {
-    @SerializedName("id_type")
-    String idType = null;
-}

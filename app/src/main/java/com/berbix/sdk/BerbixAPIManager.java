@@ -20,85 +20,16 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.http.*;
 
-interface BerbixAPIEndpoints {
-    // Request method and URL specified in the annotation
+public class BerbixAPIManager {
 
-    @Headers("Content-Type: application/json")
-    @POST("session")
-    Call<BerbixResponse> createSession(@Body BerbixConfiguration config);
-
-    @FormUrlEncoded
-    @POST("phone-verification")
-    Call<BerbixResponse> startPhoneVerification(@Header("Authorization") String accessToken, @Field("number") String phoneNumber);
-
-    @FormUrlEncoded
-    @POST("phone-verification/{parent-id}")
-    Call<BerbixResponse> verifyPhoneCode(@Header("Authorization") String accessToken, @Path("parent-id") long parentId, @Field("code") String code);
-
-    @FormUrlEncoded
-    @POST("email-verification")
-    Call<BerbixResponse> startEmailVerification(@Header("Authorization") String accessToken, @Field("email") String email);
-
-    @FormUrlEncoded
-    @POST("email-verification/{parent-id}")
-    Call<BerbixResponse> verifyEmailCode(@Header("Authorization") String accessToken, @Path("parent-id") long parentId, @Field("code") String code);
-
-    @FormUrlEncoded
-    @POST("photo-id-scan-verification")
-    Call<BerbixResponse> submitPhotoIDScan(@Header("Authorization") String accessToken, @Field("payload") String payload);
-
-    @Headers("Content-Type: application/json")
-    @POST("photo-id-verification")
-    Call<BerbixPhotoIDStatusResponse> startIDVerification(@Header("Authorization") String accessToken, @Body BerbixIDType idType);
-
-    @Multipart
-    @POST("photo-id-verification")
-    Call<BerbixPhotoIDStatusResponse> startIDUpload(@Header("Authorization") String accessToken,
-                                                    @Part MultipartBody.Part file,
-                                                    @Part MultipartBody.Part scaled,
-                                                    @Part MultipartBody.Part barcode,
-                                                    @Part MultipartBody.Part side,
-                                                    @Part MultipartBody.Part exif);
-
-    @Multipart
-    @POST("photo-id-verification/{parent-id}")
-    Call<BerbixPhotoIDStatusResponse> uploadID(@Header("Authorization") String accessToken,
-                                               @Path("parent-id") long parentId,
-                                               @Part MultipartBody.Part file,
-                                               @Part MultipartBody.Part scaled,
-                                               @Part MultipartBody.Part barcode,
-                                               @Part MultipartBody.Part side,
-                                               @Part MultipartBody.Part exif);
-
-    @FormUrlEncoded
-    @POST("details-verification")
-    Call<BerbixResponse> submitDetail(@Header("Authorization") String accessToken,
-                                      @Field("given_name") String givenName,
-                                      @Field("middle_name") String middleName,
-                                      @Field("family_name") String familyName,
-                                      @Field("date_of_birth") String birthday,
-                                      @Field("expiry_date") String expiryDate);
-}
-
-abstract class BerbixApiAdapter {
-    abstract void nextStep(BerbixResponse response);
-    abstract void phoneSubmitted(BerbixResponse response);
-    abstract void emailSubmitted(BerbixResponse response);
-    abstract void photoUploaded(BerbixPhotoIDStatusResponse response);
-    abstract void startIDCapture(BerbixPhotoIDStatusResponse response);
-    abstract void failed(String error);
-}
-
-public class BerbixApiManager {
-
-    private final BerbixApiAdapter adapter;
+    private final BerbixAPIAdapter adapter;
     private final String baseURL;
     private final BerbixConfiguration config;
     private final BerbixEnvironment environment;
 
     private String accessToken = null;
 
-    BerbixApiManager(BerbixApiAdapter adapter, BerbixConfiguration config, BerbixEnvironment environment, String baseURL) {
+    BerbixAPIManager(BerbixAPIAdapter adapter, BerbixConfiguration config, BerbixEnvironment environment, String baseURL) {
         this.adapter = adapter;
         this.config = config;
         this.environment = environment;
@@ -113,8 +44,6 @@ public class BerbixApiManager {
             return "https://api.sandbox.berbix.com/v0/";
         } else if (environment == BerbixEnvironment.STAGING) {
             return "https://api.staging.berbix.com/v0/";
-        } else if (environment == BerbixEnvironment.DEVELOPMENT) {
-            return "https://eric.dev.berbix.com:8443/v0/";
         } else {
             return "https://api.berbix.com/v0/";
         }
@@ -136,18 +65,21 @@ public class BerbixApiManager {
         return client().create(BerbixAPIEndpoints.class);
     }
 
-    public void createSession() {
-        Log.e("call failure", "creating session");
+    public void createSession(final ResponseConsumer consumer) {
         apiEndpoints().createSession(config).enqueue(new Callback<BerbixResponse>() {
             @Override
             public void onResponse(Call<BerbixResponse> call, Response<BerbixResponse> response) {
                 if (response.isSuccessful()) {
                     BerbixResponse resp = response.body();
                     if (resp != null && resp.isSuccessful()) {
-                        BerbixStateManager.getApiManager().accessToken = "bearer " + resp.token;
+                        BerbixStateManager.getApiManager().accessToken = "Bearer " + resp.token;
 
                         if (resp.next != null) {
                             adapter.nextStep(resp);
+                        }
+
+                        if (consumer != null) {
+                            consumer.consume(response.body());
                         }
                     } else {
                         adapter.failed(resp.error);
@@ -409,5 +341,78 @@ public class BerbixApiManager {
                 adapter.failed("Could not connect to server.");
             }
         });
+    }
+
+    static abstract class BerbixAPIAdapter {
+        abstract void nextStep(BerbixResponse response);
+        abstract void phoneSubmitted(BerbixResponse response);
+        abstract void emailSubmitted(BerbixResponse response);
+        abstract void photoUploaded(BerbixPhotoIDStatusResponse response);
+        abstract void startIDCapture(BerbixPhotoIDStatusResponse response);
+        abstract void failed(String error);
+    }
+
+    interface ResponseConsumer {
+        void consume(BerbixResponse response);
+    }
+
+    interface BerbixAPIEndpoints {
+        // Request method and URL specified in the annotation
+
+        @Headers("Content-Type: application/json")
+        @POST("session")
+        Call<BerbixResponse> createSession(@Body BerbixConfiguration config);
+
+        @FormUrlEncoded
+        @POST("phone-verification")
+        Call<BerbixResponse> startPhoneVerification(@Header("Authorization") String accessToken, @Field("number") String phoneNumber);
+
+        @FormUrlEncoded
+        @POST("phone-verification/{parent-id}")
+        Call<BerbixResponse> verifyPhoneCode(@Header("Authorization") String accessToken, @Path("parent-id") long parentId, @Field("code") String code);
+
+        @FormUrlEncoded
+        @POST("email-verification")
+        Call<BerbixResponse> startEmailVerification(@Header("Authorization") String accessToken, @Field("email") String email);
+
+        @FormUrlEncoded
+        @POST("email-verification/{parent-id}")
+        Call<BerbixResponse> verifyEmailCode(@Header("Authorization") String accessToken, @Path("parent-id") long parentId, @Field("code") String code);
+
+        @FormUrlEncoded
+        @POST("photo-id-scan-verification")
+        Call<BerbixResponse> submitPhotoIDScan(@Header("Authorization") String accessToken, @Field("payload") String payload);
+
+        @Headers("Content-Type: application/json")
+        @POST("photo-id-verification")
+        Call<BerbixPhotoIDStatusResponse> startIDVerification(@Header("Authorization") String accessToken, @Body BerbixIDType idType);
+
+        @Multipart
+        @POST("photo-id-verification")
+        Call<BerbixPhotoIDStatusResponse> startIDUpload(@Header("Authorization") String accessToken,
+                                                        @Part MultipartBody.Part file,
+                                                        @Part MultipartBody.Part scaled,
+                                                        @Part MultipartBody.Part barcode,
+                                                        @Part MultipartBody.Part side,
+                                                        @Part MultipartBody.Part exif);
+
+        @Multipart
+        @POST("photo-id-verification/{parent-id}")
+        Call<BerbixPhotoIDStatusResponse> uploadID(@Header("Authorization") String accessToken,
+                                                   @Path("parent-id") long parentId,
+                                                   @Part MultipartBody.Part file,
+                                                   @Part MultipartBody.Part scaled,
+                                                   @Part MultipartBody.Part barcode,
+                                                   @Part MultipartBody.Part side,
+                                                   @Part MultipartBody.Part exif);
+
+        @FormUrlEncoded
+        @POST("details-verification")
+        Call<BerbixResponse> submitDetail(@Header("Authorization") String accessToken,
+                                          @Field("given_name") String givenName,
+                                          @Field("middle_name") String middleName,
+                                          @Field("family_name") String familyName,
+                                          @Field("date_of_birth") String birthday,
+                                          @Field("expiry_date") String expiryDate);
     }
 }

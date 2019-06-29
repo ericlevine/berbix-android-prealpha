@@ -57,6 +57,7 @@ public class BerbixDetailsFragment extends Fragment {
         });
 
         givenNameField.setText(param.givenName);
+        middleNameField.setText(param.middleName);
         familyNameField.setText(param.familyName);
         birthdayField.setText(param.birthday);
         expiryDateField.setText(param.expiryDate);
@@ -84,7 +85,8 @@ public class BerbixDetailsFragment extends Fragment {
                 .setCancellable(false)
                 .setDimAmount(0.5f)
                 .show();
-        BerbixStateManager.getApiManager().submitDetail(givenNameField.getText().toString(),
+        BerbixStateManager.getApiManager().submitDetail(
+                givenNameField.getText().toString(),
                 middleNameField.getText().toString(),
                 familyNameField.getText().toString(),
                 birthdayField.getText().toString(),

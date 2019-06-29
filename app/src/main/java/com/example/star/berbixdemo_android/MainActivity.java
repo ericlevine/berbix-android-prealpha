@@ -24,11 +24,29 @@ public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        final BerbixSDKOptions options = new BerbixSDKOptionsBuilder()
+                .setRoleKey("K0JsN3jJaA92hakCrKMbXz1t1NUns8-A")
+                .setBaseURL("https://eric.dev.berbix.com:8443/v0/")
+                .build();
+
         Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                berbixSDK.startFlow(MainActivity.this, MainActivity.this);
+                //berbixSDK.startFlow(MainActivity.this, MainActivity.this, options);
+                berbixSDK.createSession(MainActivity.this, options, new Runnable() {
+                    @Override
+                    public void run() {
+                        findViewById(R.id.button2).setVisibility(View.VISIBLE);
+                    }
+                });
+            }
+        });
+
+        findViewById(R.id.button2).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                berbixSDK.display(MainActivity.this);
             }
         });
 
@@ -40,11 +58,7 @@ public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter 
             }
         });
 
-        BerbixSDKOptions options = new BerbixSDKOptionsBuilder()
-                .setRoleKey("K0JsN3jJaA92hakCrKMbXz1t1NUns8-A")
-                .setBaseURL("https://eric.dev.berbix.com:8443/v0/")
-                .build();
-        berbixSDK = new BerbixSDK("OqrzpLpafz17ETzVOlR367m5l0rC7m9c", options);
+        berbixSDK = new BerbixSDK("OqrzpLpafz17ETzVOlR367m5l0rC7m9c");
     }
 
     @Override

@@ -3,29 +3,44 @@ package com.berbix.sdk;
 import android.content.Context;
 
 public class BerbixSDK implements BerbixAuthFlow.BerbixAuthFlowAdapter {
-    private final BerbixAuthFlow authFlow;
-    private final BerbixApiManager apiManager;
+    private final String clientID;
 
     private BerbixSDKAdapter adapter;
 
-    public BerbixSDK(String clientID, BerbixSDKOptions options) {
+    public BerbixSDK(String clientID) {
+        this.clientID = clientID;
+    }
+
+    private void configure(BerbixSDKOptions options) {
         BerbixConfiguration config = new BerbixConfiguration();
         config.clientID = clientID;
         config.roleKey = options.getRoleKey();
         config.mode = "android";
 
-        this.authFlow = new BerbixAuthFlow(this);
-        this.apiManager = new BerbixApiManager(
-                this.authFlow,
+        BerbixAuthFlow authFlow = new BerbixAuthFlow(this);
+        BerbixAPIManager apiManager = new BerbixAPIManager(
+                authFlow,
                 config,
                 options.getEnvironment(),
                 options.getBaseURL());
+
+        BerbixStateManager.configure(apiManager, authFlow);
     }
 
-    public void startFlow(Context context, BerbixSDKAdapter adapter) {
-        BerbixStateManager.configure(apiManager, authFlow);
+    public void startFlow(Context context, BerbixSDKAdapter adapter, BerbixSDKOptions options) {
+        configure(options);
         this.adapter = adapter;
-        this.authFlow.startAuthFlow(context);
+        BerbixStateManager.getAuthFlow().startAuthFlow(context);
+    }
+
+    public void createSession(BerbixSDKAdapter adapter, BerbixSDKOptions options, Runnable callback) {
+        configure(options);
+        this.adapter = adapter;
+        BerbixStateManager.getAuthFlow().createSession(callback);
+    }
+
+    public void display(Context context) {
+        BerbixStateManager.getAuthFlow().startAuthFlow(context);
     }
 
     @Override
