@@ -21,10 +21,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name="com.berbix.sdk.activities.BerbixFlowActivity"
-            android:theme="@style/AppTheme.NoActionBar"
-            android:label="Berbix Verification"/>
+
         <activity android:name=".CameraActivity"/>
     </application>
 

@@ -9,10 +9,10 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.Toast;
 
-import com.berbix.sdk.BerbixSDK;
-import com.berbix.sdk.BerbixSDKAdapter;
-import com.berbix.sdk.BerbixSDKOptions;
-import com.berbix.sdk.BerbixSDKOptionsBuilder;
+import com.berbix.berbixverify.BerbixSDK;
+import com.berbix.berbixverify.BerbixSDKAdapter;
+import com.berbix.berbixverify.BerbixSDKOptions;
+import com.berbix.berbixverify.BerbixSDKOptionsBuilder;
 
 public class MainActivity extends AppCompatActivity implements BerbixSDKAdapter {
 
