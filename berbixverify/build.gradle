@@ -1,5 +1,4 @@
 apply plugin: 'com.android.library'
-apply plugin: 'maven-publish'
 
 android {
     compileSdkVersion 28
@@ -40,27 +39,4 @@ dependencies {
         exclude module: 'support-v4'
     }
     implementation 'com.kaopiz:kprogresshud:1.2.0'
-}
-
-task sourceJar(type: Jar) {
-    from android.sourceSets.main.java.srcDirs
-    classifier "sources"
-}
-
-publishing {
-    publications {
-        berbixverify(MavenPublication) {
-            groupId 'ericlevine'
-            artifactId 'berbixverify'
-            version '0.0.1'
-            artifact(sourceJar)
-            artifact("$buildDir/outputs/aar/berbixverify-release.aar")
-        }
-    }
-    repositories {
-        maven {
-            url "https://jitpack.io"
-            credentials { username authToken }
-        }
-    }
 }
